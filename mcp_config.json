@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "eidolon-repo-agent": {
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "env": {
+        "EIDOLON_REPO_PATH": ".",
+        "VECTO_PORT": "8781"
+      }
+    }
+  }
+}
