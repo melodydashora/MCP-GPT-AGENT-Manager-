@@ -1,6 +1,6 @@
 # 0. Context and method
 
-This document set is a design specification for **Astra Terminal**, an Android terminal for Melody's Samsung Galaxy S26 Ultra that is meant to be measurably better than Termux for one job: building software and learning with AI agents (OpenAI Codex, Anthropic Claude Code, Google Gemini CLI) from a phone, without switching apps, with the Melody Session Bridge as the continuity and coordination layer.
+This document set is a design specification for the terminal inside **VY Canis Majoris**, Astra's Android workspace app for Melody's Samsung Galaxy S26 Ultra. The terminal is meant to be measurably better than Termux for one job: building software and learning with AI agents (OpenAI Codex, Anthropic Claude Code, Google Gemini CLI) from a phone, without switching apps, with the Melody Session Bridge as the continuity and coordination layer. The spec refers to the terminal component as "Astra Terminal" where it needs a name of its own; the product is VY.
 
 It was produced on 2026-10-18 by a Claude Code cloud session on request of the owner. It is a specification, not code, and nothing in it has been run on Samsung hardware by its authors.
 
@@ -11,7 +11,7 @@ It was produced on 2026-10-18 by a Claude Code cloud session on request of the o
 Two clarifications arrived while the work was in progress:
 
 1. **Astra is an OpenAI model.** Astra is Melody's assistant persona running on OpenAI Codex / ChatGPT, is the phone coordinator on the bridge (session id `melody-phone`), and built Astra Terminal 0.1.1 in a Codex cloud workspace. Codex CLI is therefore Astra's own CLI. The spec treats the three vendor CLIs as equals; none is privileged.
-2. **"Make sure it can open Claude and Gemini and dot is not needed to open yet."** Adopted reading: one-tap actions that open Claude Code and Gemini CLI, at parity with the existing "Codex" action in 0.1.1, are a P0 requirement; opening is on demand, and auto-opening any agent at app launch is not required yet. The word "dot" is ambiguous (likely voice-to-text) and is carried as an open question in sections 3 and 5 rather than guessed at.
+2. **"Make sure it can open Claude and Gemini and dot is not needed to open yet."** Read against the screenshots of the build (0.3 below): "dot" is the app's own **Your OpenAI dot** card in Setup, which hands off to the ChatGPT app. So: Anthropic and Gemini must open, both as model profiles in the Agents tab and as Claude Code and Gemini CLI processes in the Terminal, at parity with Codex (P0); the OpenAI dot handoff is deferred (P2) and the spec does not design around it.
 
 ## 0.2 Who is who
 
@@ -24,7 +24,19 @@ Two clarifications arrived while the work was in progress:
 
 ## 0.3 What already exists
 
-**Astra Terminal 0.1.1** (built and emulator-verified by Astra on 2026-10-18; recorded on the bridge as `project.workspace/handoff.astra-terminal-samsung.20261018` v1 and context `codex-astra-terminal-samsung-20261018` v1):
+**VY Canis Majoris 0.1.0** ("first-light / development preview"), seen in eight screenshots Melody sent on 2026-10-18 from the S26 Ultra. Bottom tabs: Project, Terminal, Agents, Tools, Setup.
+
+| Tab | What is there today (SEEN) |
+|---|---|
+| Terminal | "Local terminal, Android shell". Five extra keys (Ctrl C, Esc, Tab, up, down). A one-line "Enter a shell command" field with Send, plus Start / attach and Stop. Footer: bundled system shell and Android utilities only; no compilers or package management yet. |
+| Agents | Model profiles (OpenAI, Anthropic, Gemini or a compatible HTTPS API; bring your own key) each with its own conversation per project, plus project memory. One profile exists: "Builder, openai / Astra". A failed request shows the toast "Model request failed. Check endpoint, key, model access, and connectivity." and the user turn appears twice. Footer discloses what is sent: memory, up to 5,000 of a chosen skill, recent conversation, the prompt. |
+| Tools | MCP connections (Streamable HTTP over HTTPS, tokens in the encrypted vault; Configure server, Connect / inspect). Skills library (3 skills; Import SKILL.md; imports never execute code). Screen studio (share screen, snapshot, view latest; captures stay local). App preview and tests (sandboxed HTML/CSS/JS preview with network blocked; Run test.sh). |
+| Setup | Workspace health checks (storage writable; profiles 0; notifications not granted; screen access needs fresh consent; MCP not connected this session; models verified only on a successful request). Verify encrypted storage. Export project and settings. "Your OpenAI dot" card (Open ChatGPT, Dot setup guide). Version card 0.1.0: store release, broader toolchains, automated agent editing and independent security review in progress. |
+| Project | Project "first-light": files and project memory saved on device, editor autosave, Switch / new project, Export ZIP, New file, Import, Memory. No git visible. |
+
+What the screenshots show about the gap: the terminal is command-at-a-time with no raw key path, no physical-keyboard parity, no Linux backend; the MCP connection does not survive the session; notifications are not yet granted; a failed model call duplicates the user's turn and reports a generic cause. Section 11 turns these into the gap list.
+
+**Astra Terminal 0.1.1**, the SSH-to-Termux terminal that preceded or accompanies VY (built and emulator-verified by Astra on 2026-10-18; recorded on the bridge as `project.workspace/handoff.astra-terminal-samsung.20261018` v1 and context `codex-astra-terminal-samsung-20261018` v1):
 
 - Package `dev.astra.terminal`, versionCode 2, debug-signed development APK; source exists only as a zip in the Codex workspace.
 - Native Android `/system/bin/sh` PTY in app storage; SSH terminal (JSch 2.28.8 + BouncyCastle 1.86, Ed25519) with explicit SHA256 host-key approval, persisted endpoint pins, refusal of changed keys, no saved password; session tabs; extra-keys row; foreground session service; explicit "Ubuntu" and "Codex" actions in SSH sessions.
@@ -46,6 +58,7 @@ Ten design dimensions were researched in parallel by independent agents, each wi
 
 | Label | Meaning |
 |---|---|
+| SEEN-VY-0.1.0 | Read from Melody's screenshots of the VY Canis Majoris 0.1.0 build on 2026-10-18. |
 | VERIFIED-WEB | Checked against a source on 2026-10-18; URL given. |
 | KNOWLEDGE | From the authors' training, not re-checked today. Treat as a lead, not a fact. |
 | INFERRED | The authors' reasoning; untested. |
@@ -56,4 +69,4 @@ Priorities: **P0** needed before anything works reliably on the phone; **P1** wh
 
 ## 0.6 How to read this set
 
-Section 1 (keyboard and input) answers the owner's first-named priority and ends with the complete key map. Sections 2 to 4 are the terminal itself and its Linux backend. Sections 5 to 7 are the agent, collaboration and learning layers. Sections 8 to 10 cover security and distribution, the competitive landscape and the Android app architecture. Section 11 is the roadmap and the gap list against 0.1.1. Each section ends with a test checklist, open questions and the sources that were actually opened.
+Section 1 (keyboard and input) answers the owner's first-named priority and ends with the complete key map. Sections 2 to 4 are the terminal itself and its Linux backend. Sections 5 to 7 are the agent, collaboration and learning layers. Sections 8 to 10 cover security and distribution, the competitive landscape and the Android app architecture. Section 11 is the roadmap and the gap list against VY Canis Majoris 0.1.0 and Astra Terminal 0.1.1. Each section ends with a test checklist, open questions and the sources that were actually opened.
