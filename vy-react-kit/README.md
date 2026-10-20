@@ -44,36 +44,47 @@ React pair plus Sucrase and the runtime is about 1.4 MB.
 1. Copy `assets/react/*.js` to `app/src/main/assets/preview/react/` and the three license
    files to `app/src/main/assets/licenses/`. Run `sha256sum -c` against `SHA256SUMS.txt` first.
 2. Copy `ReactPreviewBundler.java` to `app/src/main/java/com/melody/vycanismajoris/`.
-3. Where the preview snapshot is built (the published file list names `ProjectPreviewSnapshot`
-   and `PreviewActivity`; adapt to what the code actually does), branch like this:
+3. Hook into the preview's request handler. Per the VY builder's 2026-10-19 source notes,
+   `PreviewActivity.java` gives each preview a fresh private HTTPS-style `.vy.invalid` origin,
+   and its `shouldInterceptRequest` serves files from the immutable `ProjectPreviewSnapshot`
+   while blocking network, file and content access. Keep all of that. Only change what is
+   returned for the preview's main page when the snapshot is a React project:
 
 ```java
-Map<String, String> files = /* project-relative path -> UTF-8 text, from the snapshot */;
+// Once per preview load, after the snapshot is captured:
+Map<String, String> files = /* snapshot text files, project-relative path -> UTF-8 text */;
+ReactPreviewBundler.Result reactPage = null;
+String reactError = null;
 if (ReactPreviewBundler.findEntry(files) != null) {
-    AssetManager am = context.getAssets();
-    ReactPreviewBundler.Assets assets = new ReactPreviewBundler.Assets(
-        readAsset(am, "preview/react/react.development.js"),
-        readAsset(am, "preview/react/react-dom.development.js"),
-        readAsset(am, "preview/react/vy-sucrase.min.js"),
-        readAsset(am, "preview/react/vy-react-runtime.js"));
     byte[] raw = new byte[18];
     new SecureRandom().nextBytes(raw);
     String nonce = Base64.encodeToString(raw, Base64.NO_WRAP | Base64.URL_SAFE | Base64.NO_PADDING);
     try {
-        ReactPreviewBundler.Result page = ReactPreviewBundler.build(
-            files, assets, nonce, ReactPreviewBundler.MODE_DEVELOPMENT);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.loadDataWithBaseURL(EXISTING_PREVIEW_BASE_URL, page.html, "text/html", "UTF-8", null);
-        // Show page.warnings to the user if not empty.
+        reactPage = ReactPreviewBundler.build(files, cachedAssets(context), nonce,
+            ReactPreviewBundler.MODE_DEVELOPMENT);
     } catch (ReactPreviewBundler.BundleException e) {
-        // Show e.getMessage() in the preview screen. It is written for the user.
+        reactError = e.getMessage();   // Show this in the preview screen; it is user-facing.
     }
 }
+
+// In the existing shouldInterceptRequest, for the preview's main page URL only:
+if (reactPage != null && isMainPage(request.getUrl())) {
+    Map<String, String> headers = new HashMap<>();
+    headers.put("Content-Security-Policy", reactPage.contentSecurityPolicy);
+    headers.put("Cache-Control", "no-store");
+    return new WebResourceResponse("text/html", "UTF-8", 200, "OK", headers,
+        new ByteArrayInputStream(reactPage.html.getBytes(StandardCharsets.UTF_8)));
+}
+// Everything else keeps the existing snapshot handling and blocking.
 ```
 
-   Make a fresh nonce for every page load. Keep the preview's existing network blocking in
-   `shouldInterceptRequest`; the CSP is an extra layer, not a replacement. Cache the four asset
-   strings after the first read; they total about 1.4 MB.
+   `cachedAssets` reads the four files once with `AssetManager` and keeps them; they total
+   about 1.4 MB. Make a fresh nonce for every preview load. If the handler already adds its
+   own `Content-Security-Policy` header, replace it with `reactPage.contentSecurityPolicy`
+   for the React page. A header without this nonce blocks the runtime. Show
+   `reactPage.warnings` to the user when it is not empty. Non-React projects must take the
+   unchanged path. If the preview instead loads one HTML string, `loadDataWithBaseURL` with
+   the existing base URL and `reactPage.html` also works.
 4. Copy `test/reactpreview/` into the VY repository and add `bash test/reactpreview/run.sh` to
    `scripts/test-core.sh`. Set `VY_SKIP_BROWSER=1` where Playwright is not installed; the Java
    stage still runs.
@@ -95,9 +106,9 @@ if (ReactPreviewBundler.findEntry(files) != null) {
 
 ```
 $ NODE_PATH=/opt/node22/lib/node_modules bash test/reactpreview/run.sh
-ReactPreviewBundlerCheck: 46 assertions passed
+ReactPreviewBundlerCheck: 48 assertions passed
 asset hashes: OK
-browser-check: 35 assertions passed (Chromium 141.0.7390.37)
+browser-check: 38 assertions passed (Chromium 141.0.7390.37)
 $ bash scripts/build-react-assets.sh
 Rebuilt assets match SHA256SUMS.txt
 ```
@@ -107,6 +118,8 @@ with the network offline and every request aborted. It covers a Vite-style multi
 (JSX, TSX, JSON, CSS, `useState`, `StrictMode`), the starter template, a single-file app,
 syntax errors with line and column, a missing npm package, a render error, and source text
 that tries to close the script tag. A probe inside the app confirms the page blocks `eval`.
+It also serves the page from a private `https://….vy.invalid` origin through a request handler
+with the policy sent as a header, which is how VY's preview loads pages.
 
 ## Device acceptance still required
 

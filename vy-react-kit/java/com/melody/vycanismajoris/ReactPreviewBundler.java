@@ -75,9 +75,17 @@ public final class ReactPreviewBundler {
         public final List<String> included;
         public final List<String> skipped;
         public final List<String> warnings;
+        /**
+         * The page's Content-Security-Policy. When the preview serves the page through
+         * shouldInterceptRequest, send this exact value as the response's
+         * Content-Security-Policy header. A different header policy is combined with the
+         * page's own policy, and one without this nonce blocks the runtime.
+         */
+        public final String contentSecurityPolicy;
 
         Result(String html, String entry, List<String> included, List<String> skipped,
-               List<String> warnings) {
+               List<String> warnings, String contentSecurityPolicy) {
+            this.contentSecurityPolicy = contentSecurityPolicy;
             this.html = html;
             this.entry = entry;
             this.included = Collections.unmodifiableList(included);
@@ -257,7 +265,7 @@ public final class ReactPreviewBundler {
         } else {
             page = page + "\n" + scripts;
         }
-        return new Result(page, entry, new ArrayList<String>(sources.keySet()), skipped, warnings);
+        return new Result(page, entry, new ArrayList<String>(sources.keySet()), skipped, warnings, csp);
     }
 
     private static String removeLocalModuleScripts(String html, Map<String, String> files) {

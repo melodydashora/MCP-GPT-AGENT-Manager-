@@ -73,6 +73,10 @@ public final class ReactPreviewBundlerCheck {
         check(viteResult.html.contains("Content-Security-Policy"), "CSP added");
         check(viteResult.html.contains("script-src 'nonce-" + NONCE + "'"), "CSP nonce");
         check(!viteResult.html.contains("unsafe-eval"), "no unsafe-eval");
+        check(viteResult.contentSecurityPolicy.startsWith("default-src 'none'; script-src 'nonce-" + NONCE + "'"),
+            "header policy matches page nonce");
+        check(viteResult.html.contains("content=\"" + viteResult.contentSecurityPolicy + "\""),
+            "header policy equals meta policy");
         check(viteResult.html.indexOf("<title>VY Vite fixture</title>") > 0, "user head kept");
         check(viteResult.included.contains("src/components/Greeting.tsx"), "tsx included");
         check(viteResult.included.contains("src/data.json"), "json included");

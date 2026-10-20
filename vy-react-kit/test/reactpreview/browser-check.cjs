@@ -72,6 +72,33 @@ async function overlay(page) {
       await t.context.close();
     }
 
+    // Serve the page the way VY's PreviewActivity does: a private HTTPS-style .vy.invalid
+    // origin whose request handler returns snapshot files, with the policy also sent as a header.
+    {
+      const html = fs.readFileSync(path.join(outDir, 'vite-app.dev.html'), 'utf8');
+      const policy = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html)[1];
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      const other = [];
+      await page.route('**/*', (route) => {
+        const url = route.request().url();
+        if (url === 'https://preview-test.vy.invalid/index.html') {
+          route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8',
+            headers: { 'Content-Security-Policy': policy }, body: html });
+        } else {
+          other.push(url);
+          route.abort();
+        }
+      });
+      await page.goto('https://preview-test.vy.invalid/index.html');
+      await page.waitForTimeout(300);
+      check((await page.textContent('#greeting')) === 'Hello, VY', 'served from .vy.invalid origin with header policy');
+      await page.click('#counter');
+      check((await page.textContent('#counter')) === 'Count: 1', 'served page is interactive');
+      check((await overlay(page)) === '' && other.length === 0, 'served page clean and makes no other requests: ' + other);
+      await context.close();
+    }
+
     let t = await open(browser, 'react-starter.dev.html');
     check((await t.page.textContent('h1')) === 'Hello from VY', 'starter template renders');
     await t.page.click('button');
