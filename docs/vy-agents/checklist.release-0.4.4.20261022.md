@@ -1,9 +1,14 @@
-# VY 0.4.4 (versionCode 20) deploy-gate checklist
+# VY deploy-gate checklist for the next Play upload
 
-v1, 2026-10-22. Written by claude-code-vy-react-kit-20261019 (cloud) at Melody's request.
+v2, 2026-10-22 about 10:45Z. Written by claude-code-vy-react-kit-20261019 (cloud) at Melody's request. v1 was titled "0.4.4 (versionCode 20)".
+
+**v2 change: version numbers.**
+- At 09:49Z Astra built and installed the dev build 0.4.5-native (code 21). It includes F and a native launcher. See handoff.native-trampoline.20261022 and roadmap v14.
+- So the next Play upload is code 21 or higher, not 20. Read "0.4.4 / code 20" below as "the next upload".
+- New: §3 N (native-launcher policy decision) and QA rows 34–35.
 
 **Sources.** A 9-agent workflow read the bridge notes (roadmap v13 and earlier), Melody's Drive (read-only) and current Play documentation. An independent critic then reviewed it.
-- Full version: GitHub melodydashora/MCP-GPT-AGENT-Manager-, branch ccr-46e71b07-3zobv3, docs/vy-agents/2026-10-22-release-0.4.4-gate.md.
+- Full version: GitHub melodydashora/MCP-GPT-AGENT-Manager-, branch ccr-46e71b07-3zobv3 (commit 79822f7), docs/vy-agents/2026-10-22-release-0.4.4-gate.md.
 
 **Status: PLAN.** Nothing here was checked against /root/projects/vy-canis-majoris.
 - Bug status comes from owner-published bridge notes.
@@ -28,6 +33,7 @@ v1, 2026-10-22. Written by claude-code-vy-react-kit-20261019 (cloud) at Melody's
 
 **General**
 - Nobody else edits the tree while the claim says "held".
+- Claude and Astra already split the source by file: Astra's code-21 handoff says it left Claude's four owned files alone. Keep that split. Write it into claim.vy-source.20261022 (owner and files) so a third agent can see it.
 - At about 95% of your context or usage limit, bundle: buildable tree, source backup, checkpoint, handoff note, status message to claude-code-vy-react-kit-20261019.
 - No Play Console submissions while Melody is asleep.
 
@@ -118,7 +124,21 @@ Applied in Project ZIP export, ProjectContext, the Build inventory and Build cap
   - claude, codex and gemini still resolve, and stay signed in (or need one re-login that persists);
   - an export ZIP contains no credentials.
 
-**Not in 0.4.4:** Agents-tab context work (0.4.5+), pip, React integration, launchers. Do not claim them in the listing.
+**N. Native launcher (vy-native, in dev code 21): Melody decides before the next upload.**
+- **What it does.** Code 21 runs native ELF binaries that npm packages download, through verified copies and a launcher. On the phone it works.
+- **The Play risk.** Play's Device and Network Abuse policy says an app may not download executable code (dex, JAR, .so) from a source other than Google Play. Code that runs in a virtual machine or interpreter is exempt.
+  - Native binaries fetched by npm and then executed are the case the policy targets.
+  - This class of problem is a large part of why Termux is distributed outside Play.
+  - Check the current policy text before deciding.
+- **Options:**
+  1. Keep the launcher for dev and sideloaded builds, and switch it off in the Play build with a build flag. Lowest risk.
+  2. Allow only binaries shipped inside the APK.
+  3. Ship it and accept that review may reject the app or remove it later.
+- **Either way:**
+  - the listing must not promise anything that depends on the launcher unless it ships;
+  - record the decision in the roadmap.
+
+**Not in this upload:** Agents-tab context work, pip, React integration, launchers. Do not claim them in the listing.
 
 ## 4. CLI evidence (Astra, read-only, now)
 
@@ -142,7 +162,7 @@ Save the results to verification.vy-cli-launch.20261022, with no tokens or accou
 
 ## 5. Build, sign, upload (Stage 1 to 3)
 
-1. Set versionCode 20 and versionName 0.4.4. Re-confirm targetSdk 36 (required for updates since 2026-08-31) and minSdk 26.
+1. Use versionCode 21 or higher (dev 0.4.5-native already uses 21), with a matching versionName. Re-confirm targetSdk 36 (required for updates since 2026-08-31) and minSdk 26.
 2. Run scripts/compile-check.sh, scripts/test-core.sh (with VY_JSON_JAR) and the new E and C host tests. Build with scripts/build-on-android.sh.
 3. **16 KB pages.** Treat them as enforced now.
    - Run the alignment verifier on every .so.
@@ -209,6 +229,8 @@ Save the results to verification.vy-cli-launch.20261022, with no tokens or accou
 | 31 | Endpoint HTTPS | Point a profile at http://example.com | Refused (localhost excepted at most) | S |
 | 32 | Zip-slip | If import exists: ZIP with ../, absolute paths, symlinks, .env, .claude/.credentials.json | Each refused; nothing written outside the project | B (if import exists) |
 | 33 | Accessibility | TalkBack through the tabs, the edit toggle, Build, Undo, Preview, Stop, Report. Max font and display size, light and dark | Labels, roles, toggle state announced. No clipping. 48dp targets | S (B if a core control is unlabeled) |
+| 34 | Native launcher state | On the Play-candidate build: is vy-native on or off? If on, which binaries does it launch? Try a binary outside npm package bins | Matches Melody's §3 N decision. Out-of-scope binaries refused | B |
+| 35 | Signed-in tool use | Still pending from code 21 (phone was locked): one signed-in Codex prompt that runs a tool; PageUp/PageDown keys; output-log UI | Works, or exact error recorded. Don't count --version or a features list as proof that tools work | B |
 
 ## 7. Melody's actions (her call; nothing done for her)
 
@@ -234,3 +256,4 @@ Save the results to verification.vy-cli-launch.20261022, with no tokens or accou
 - Is a second Android device or emulator available for Play-path testing?
 - Why does the device test runner abort with exit 134?
 - Is each CLI JavaScript or native (section 4)?
+- Should the Play build ship the native launcher (§3 N)?

@@ -3,7 +3,7 @@
 v1, 2026-10-22. Written by claude-code-vy-react-kit-20261019 (cloud) at Melody's request.
 
 **How it was made.** A 9-agent workflow wrote three independent designs (smallest change, most token savings, never lose work). It scored them out of 50: 41, 35 and 33. It took the smallest-change design as the base and grafted in the best ideas from the other two.
-- Full spec, about 90 KB, with every rule, JSON example, test and source: GitHub melodydashora/MCP-GPT-AGENT-Manager-, branch ccr-46e71b07-3zobv3, docs/vy-agents/2026-10-22-agents-context-design.md.
+- Full spec, about 90 KB, with every rule, JSON example, test and source: GitHub melodydashora/MCP-GPT-AGENT-Manager-, branch ccr-46e71b07-3zobv3 (commit 79822f7), docs/vy-agents/2026-10-22-agents-context-design.md.
 - Provider research: docs/vy-agents/2026-10-22-provider-research.md.
 
 **Status: DESIGN ONLY.**
