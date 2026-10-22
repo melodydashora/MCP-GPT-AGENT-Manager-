@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>VY phone workspace runbook</title>
+<style>
+ body{font-family:Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;margin:0;padding:0 .2in}
+ h1{font-size:20pt;margin:0 0 4pt} h2{font-size:14pt;margin:18pt 0 6pt;border-bottom:1px solid #999;padding-bottom:2pt} h3{font-size:12pt;margin:12pt 0 4pt}
+ .sub{color:#555;margin-bottom:12pt}
+ pre{background:#f3f3f3;border:1px solid #ccc;padding:8pt;font-size:9.5pt;white-space:pre-wrap;word-break:break-all;page-break-inside:avoid}
+ code{font-family:Menlo,Consolas,monospace;font-size:9.5pt;background:#f3f3f3;padding:0 2pt}
+ table{border-collapse:collapse;width:100%;margin:6pt 0} td,th{border:1px solid #bbb;padding:4pt 6pt;vertical-align:top;font-size:10.5pt} th{background:#eee;text-align:left}
+ .box{border:1px solid #c80;background:#fff7e6;padding:8pt;margin:8pt 0}
+ .ok{color:#063}
+ ul{margin:4pt 0 4pt 18pt}
+</style></head><body>
+<h1>VY phone workspace runbook</h1>
+<div class="sub">Termux + Ubuntu (proot-distro) on Melody's Samsung. Backup, agent map, Claude Code shortcut. Written by Claude Code (cloud) on 2026-10-21 from the session with Melody. Contains no credentials.</div>
+
+<h2>0. Where we are</h2>
+<table>
+<tr><th style="width:38%">Step</th><th>Status on 2026-10-21</th></tr>
+<tr><td>1. Back up the Ubuntu workspace</td><td>Running when this was written. Verify with the check in section 2 before going on.</td></tr>
+<tr><td>2. Agent map so any assistant in Termux knows where everything is</td><td>Not done yet. Section 3.</td></tr>
+<tr><td>3. Create the <code>vy</code> shortcut</td><td>Not created yet. Section 4. Do it last.</td></tr>
+</table>
+<p><b>Facts verified by Melody's own checks on 2026-10-21:</b></p>
+<ul>
+<li>Distro name: <code>ubuntu</code> (from <code>proot-distro list</code>).</li>
+<li>Inside Ubuntu: <code>HOME=/root</code>, user <code>root</code>, project folder <code>/root/projects/vy-canis-majoris</code> exists.</li>
+<li>Claude Code session folders in <code>/root/.claude/projects</code>: <code>-root</code>, <code>-root-projects</code>, <code>-root-projects-my-project-astra</code>, <code>-root-projects-vy-canis-majoris</code>.</li>
+<li>Ubuntu's files, seen from Termux: <code>$PREFIX/var/lib/proot-distro/containers/ubuntu/rootfs</code>. Ubuntu's <code>/root</code> is that path plus <code>/root</code>, and it holds <code>AGENTS.md</code> and <code>projects</code>.</li>
+<li>Notes from Astra (Codex) and earlier Claude Code sessions live in <code>/root/projects/my-project/astra/handoffs/</code> and <code>/root/projects/my-project/astra/checkpoints/</code>.</li>
+</ul>
+
+<h2>1. Why a shortcut once "lost" the workspace</h2>
+<p>A shortcut cannot delete files, but it can start Claude Code somewhere other than the real workspace, which looks the same as lost work. The usual causes:</p>
+<ul>
+<li><b>Wrong home.</b> Logging in with <code>--termux-home</code>, or as a user other than root, hides everything in <code>/root</code> behind a different home folder.</li>
+<li><b>Wrong folder.</b> Claude Code keeps conversations per folder. Started in another folder it shows no history and none of the files.</li>
+<li><b>A second Ubuntu.</b> Installing the distro again under a slightly different name creates a fresh, empty one next to the real one.</li>
+<li><b>Widgets.</b> Home-screen shortcut widgets run with a stripped-down environment. Test from the Termux prompt first.</li>
+</ul>
+<div class="box">In every case the work is still on disk under the rootfs path in section 0. Check there before doing anything else.</div>
+
+<h2>2. Step 1: back up (from the outer Termux prompt, not inside Ubuntu)</h2>
+<p>This was the command that ran. It copies Ubuntu's <code>/root/projects</code> and <code>/root/.claude</code> into Termux's private storage. It prints nothing while it works and can take several minutes.</p>
+<pre>P=$(find $PREFIX/var/lib/proot-distro -maxdepth 5 -type d -path '*/root/projects' | head -1); R=${P%/root/projects}; echo "ROOTFS=$R"; ls "$R/root"
+tar czf ~/backups/vy-root-$(date +%Y%m%d-%H%M).tgz -C "$R" root/projects root/.claude</pre>
+<p>"Permission denied" lines from <code>find</code> about <code>sdcard</code>, <code>apex</code>, <code>system</code>, <code>vendor</code> and similar are harmless. They are empty placeholder folders.</p>
+<h3>Verify</h3>
+<pre>ls -lh ~/backups; tar tzf ~/backups/vy-root-*.tgz | wc -l</pre>
+<p class="ok">Good: a size in megabytes (not 20 bytes) and a file count in the thousands.</p>
+<h3>Restore, if ever needed (extracts into a safe side folder first)</h3>
+<pre>mkdir -p ~/restore && tar xzf ~/backups/vy-root-YYYYMMDD-HHMM.tgz -C ~/restore && ls ~/restore/root</pre>
+<p>Then copy only what is missing back into <code>$PREFIX/var/lib/proot-distro/containers/ubuntu/rootfs/root/</code>.</p>
+
+<h2>3. Step 2: make sure an agent in Termux knows where everything is</h2>
+<p>Claude Code can read any file it is pointed at, but it only sees the folder it starts in, and its conversation history is kept per folder. Two changes:</p>
+<ol>
+<li><b>Start one level up, in <code>/root/projects</code>.</b> Then VY, Astra's handoffs and checkpoints, and everything else are in one workspace.</li>
+<li><b>Leave a map.</b> Claude Code reads <code>CLAUDE.md</code> from the start folder at every launch. Run this once inside Ubuntu (<code>proot-distro login ubuntu</code> first):</li>
+</ol>
+<pre>cat > /root/projects/CLAUDE.md <<'EOF2'
+# Melody's phone workspace (Termux Ubuntu)
+- vy-canis-majoris/ : VY Canis Majoris Android app source. Read docs/PRIORITY-FIXES-2026-10-21.md and docs/*.md first.
+- my-project/astra/handoffs/ and my-project/astra/checkpoints/ : handoffs, checkpoints, day summaries and test results from Astra (Codex) and earlier Claude Code sessions. Read the newest ones before starting work.
+- Also read /root/AGENTS.md: Astra's (Codex) working rules for this phone.
+- Shared notes between all assistants: Melody Session Bridge MCP, namespace project.vy-canis-majoris. Roadmap key: plan.agent-dev-loop-and-play-packaging.20261020. Read hub/routing first.
+- Rules: never Replit Agent. Never copy the upload keystore, API keys or tokens to /sdcard, the bridge or notes. Back up before editing. Report only tests actually run.
+EOF2
+cat /root/projects/CLAUDE.md</pre>
+<p>Codex reads <code>AGENTS.md</code> the same way; the existing <code>/root/AGENTS.md</code> already serves Astra. Gemini CLI reads <code>GEMINI.md</code>; copy the same text there if Gemini should see it.</p>
+<p>To pick an older conversation from any folder: <code>cd</code> into that folder and run <code>claude --resume</code>.</p>
+
+<h2>4. Step 3: the shortcut (last; from the outer Termux prompt)</h2>
+<p>It logs into Ubuntu as root, moves to <code>/root/projects</code>, and resumes the newest conversation there. It refuses to run if the folder is missing instead of starting somewhere else.</p>
+<pre>mkdir -p ~/bin
+cat > ~/bin/vy <<'EOF2'
+#!/data/data/com.termux/files/usr/bin/sh
+exec proot-distro login ubuntu -- bash -lc 'cd /root/projects || { echo "projects folder missing; not starting claude"; exit 1; }; exec claude --continue'
+EOF2
+chmod +x ~/bin/vy
+grep -q 'HOME/bin' ~/.bashrc 2>/dev/null || echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc</pre>
+<p>First run: type <code>vy</code> at the Termux prompt and confirm it resumes the expected conversation. Skip the home-screen widget until that works.</p>
+
+<h2>5. If a workspace ever looks empty</h2>
+<pre>proot-distro login ubuntu -- bash -lc 'echo HOME=$HOME; echo USER=$(whoami); pwd; ls -d /root/projects/vy-canis-majoris; ls /root/.claude/projects'
+proot-distro list
+ls $PREFIX/var/lib/proot-distro/containers/*/rootfs/root</pre>
+<p>Expect <code>/root</code>, <code>root</code>, the project folder, the four session folders, one container named <code>ubuntu</code>. If any differ, the files are still at the rootfs path; fix the login, do not reinstall.</p>
+
+<h2>6. Pending items recorded on the bridge (roadmap v8)</h2>
+<ul>
+<li>CLI browser sign-in from VY's own terminal (open sign-in links in the phone browser; keep the paste-a-code fallback).</li>
+<li>One-tap launchers for Claude Code, Codex and Gemini in VY; the <code>vy</code> command in Termux until then.</li>
+<li>Back up the Play upload keystore privately off the phone; rotate the Cloudflare token.</li>
+</ul>
+</body></html>
