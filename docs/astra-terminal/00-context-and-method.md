@@ -1,8 +1,10 @@
 # 0. Context and method
 
-This document set is a design specification for the terminal inside **VY Canis Majoris**, Astra's Android workspace app for Melody's Samsung Galaxy S26 Ultra. The terminal is meant to be measurably better than Termux for one job: building software and learning with AI agents (OpenAI Codex, Anthropic Claude Code, Google Gemini CLI) from a phone, without switching apps, with the Melody Session Bridge as the continuity and coordination layer. The spec refers to the terminal component as "Astra Terminal" where it needs a name of its own; the product is VY.
+> **Status, 2026-11-23.** This page is the only part of the planned document set that exists. The research behind it ran on 2026-10-18. Verification was only partly completed and none of the planned sections was written, because the run hit an account usage limit. The research agents' full findings were then lost when the cloud workspace was recycled; only their summaries survived. Those summaries were handed to the owner's session bridge for the builder and are not in this repository. The app has also changed a great deal since this page was written, so section 0.3 describes the state on 18 October 2026 only.
 
-It was produced on 2026-10-18 by a Claude Code cloud session on request of the owner. It is a specification, not code, and nothing in it has been run on Samsung hardware by its authors.
+This page was written as the opening of a planned design specification for the terminal inside **VY Canis Majoris**, Astra's Android workspace app for Melody's Samsung Galaxy S26 Ultra. The aim was a terminal measurably better than Termux for one job: building software and learning with AI agents (OpenAI Codex, Anthropic Claude Code, Google Gemini CLI) from a phone, without switching apps, with the Melody Session Bridge as the continuity and coordination layer.
+
+It was written on 2026-10-18 by a Claude Code cloud session at the owner's request. Nothing in it was run on Samsung hardware by its author.
 
 ## 0.1 The request
 
@@ -36,7 +38,7 @@ Two clarifications arrived while the work was in progress:
 
 What the screenshots show about the gap: the terminal is command-at-a-time with no raw key path, no physical-keyboard parity, no Linux backend; the MCP connection does not survive the session; notifications are not yet granted; a failed model call duplicates the user's turn and reports a generic cause. Section 11 turns these into the gap list.
 
-**Astra Terminal 0.1.1**, the SSH-to-Termux terminal that preceded or accompanies VY (built and emulator-verified by Astra on 2026-10-18; recorded on the bridge as `project.workspace/handoff.astra-terminal-samsung.20261018` v1 and context `codex-astra-terminal-samsung-20261018` v1):
+**Astra Terminal 0.1.1**, a separate and earlier app, an SSH terminal onto an existing Termux install (built and emulator-verified by Astra on 2026-10-18; recorded on the bridge as `project.workspace/handoff.astra-terminal-samsung.20261018` v1 and context `codex-astra-terminal-samsung-20261018` v1):
 
 - Package `dev.astra.terminal`, versionCode 2, debug-signed development APK; source exists only as a zip in the Codex workspace.
 - Native Android `/system/bin/sh` PTY in app storage; SSH terminal (JSch 2.28.8 + BouncyCastle 1.86, Ed25519) with explicit SHA256 host-key approval, persisted endpoint pins, refusal of changed keys, no saved password; session tabs; extra-keys row; foreground session service; explicit "Ubuntu" and "Codex" actions in SSH sessions.
@@ -50,11 +52,13 @@ What the screenshots show about the gap: the terminal is command-at-a-time with 
 
 **This repository** (`MCP-GPT-AGENT-Manager-`) is a Python MCP server exposing git and file tools through a proxy with origin allowlist, per-caller rate limit and audit log (Vecto) to a gated agent (Eidolon: path boundary, operation allowlist, denied secret patterns, size limit, hashed bearer token). The spec reuses that gate-proxy-audit pattern as the model for how agents get mediated access to the phone's workspace.
 
-## 0.4 Method
+## 0.4 Method: what was planned and what happened
 
-Ten design dimensions were researched in parallel by independent agents, each with web access and a scope brief. For each dimension, the researcher's load-bearing claims were handed to two independent verifiers with different lenses (an adversarial fact-checker working from primary sources, and a practitioner working from issue trackers and real-device reports). Section writers then applied the verdicts: a claim is stated as fact only when no verifier refuted it and at least one confirmed it with a primary source. A final pass checked the sections against each other for contradictions and gaps and produced the roadmap.
+Planned: research each design dimension in parallel with independent agents, each with web access and a scope brief; hand each researcher's load-bearing claims to two independent verifiers with different lenses (an adversarial fact-checker working from primary sources, and a practitioner working from issue trackers and real-device reports); have section writers apply the verdicts, stating a claim as fact only when no verifier refuted it and at least one confirmed it; then check the sections against each other and write the roadmap.
 
-## 0.5 Confidence labels used throughout
+What happened: eleven dimensions were researched (the ten listed in 0.6 plus UI and visual design, added at the owner's request). Of the twenty-two verification passes, twelve completed and ten failed on the usage limit. No section writer completed, so no section, cross-check or roadmap exists.
+
+## 0.5 Confidence labels the sections were to use
 
 | Label | Meaning |
 |---|---|
@@ -67,6 +71,6 @@ Ten design dimensions were researched in parallel by independent agents, each wi
 
 Priorities: **P0** needed before anything works reliably on the phone; **P1** what makes it better than Termux; **P2** later.
 
-## 0.6 How to read this set
+## 0.6 The sections that were planned
 
-Section 1 (keyboard and input) answers the owner's first-named priority and ends with the complete key map. Sections 2 to 4 are the terminal itself and its Linux backend. Sections 5 to 7 are the agent, collaboration and learning layers. Sections 8 to 10 cover security and distribution, the competitive landscape and the Android app architecture. Section 11 is the roadmap and the gap list against VY Canis Majoris 0.1.0 and Astra Terminal 0.1.1. Each section ends with a test checklist, open questions and the sources that were actually opened.
+None of these was written. Section 1, keyboard and input, was to answer the owner's first-named priority and end with the complete key map. Sections 2 to 4 were the terminal engine, multimedia and continuity, and the Linux backend. Sections 5 to 7 were the agent, collaboration and learning layers. Sections 8 to 10 were security and distribution, the competitive landscape and the Android app architecture. A UI and visual design section and a closing roadmap with a gap list were to follow.
